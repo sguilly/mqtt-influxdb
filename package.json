@@ -3,7 +3,7 @@
     "name": "Stéphane GUILLY",
     "email": "stephane.guilly@gmail.com"
   },
-  "name": "mqtt-zibase",
+  "name": "mqtt-influxdb",
   "description": "Simple bridge to store MQTT data to a INFLUXDB database ",
   "version": "0.1.0",
   "license": "LGPLv2",
