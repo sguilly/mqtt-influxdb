@@ -46,7 +46,7 @@ var opts = {
     qos: 1 // 0 : without persistence and no ACK | 1 : with offline mode and ACK
   },
   influx: {
-    host: '188.213.25.148',
+    host: 'localhost',
     port: 8086, // optional, default 8086
     username: 'root',
     password: 'root',
