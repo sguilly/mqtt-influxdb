@@ -1,0 +1,13 @@
+language: node_js
+node_js:
+  - "0.10"
+env:
+  - INFLUX=0.8.5
+before_script:
+  - wget "http://s3.amazonaws.com/influxdb/influxdb_$(echo $INFLUX)_amd64.deb"
+  - sudo dpkg -i "influxdb_$(echo $INFLUX)_amd64.deb"
+  - sudo service influxdb start
+  - sleep 5
+install: npm install
+
+
