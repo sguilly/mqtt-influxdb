@@ -46,7 +46,7 @@ var opts = {
     qos: 1 // 0 : without persistence and no ACK | 1 : with offline mode and ACK
   },
   influx: {
-    host: 'localhost',
+    host: '188.213.25.148',
     port: 8086, // optional, default 8086
     username: 'root',
     password: 'root',
@@ -138,6 +138,10 @@ describe('#start mqtt-influxdb bridge and generate an event', function () {
 describe('#query influxdb', function () {
   it('should read the event OS01 from the database', function (done) {
     clientInflux.query('SELECT temperature FROM OS01;', function (err, res) {
+      console.log('query OS01');
+      console.log(err);
+      console.log(res);
+
       assert.equal(err, null);
       assert(res instanceof Array);
       assert.equal(res.length, 1);
