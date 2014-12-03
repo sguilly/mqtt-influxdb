@@ -4,6 +4,7 @@ node_js:
 env:
   - INFLUX=0.8.5
 before_script:
+  - npm install -g grunt-cli
   - wget "http://s3.amazonaws.com/influxdb/influxdb_$(echo $INFLUX)_amd64.deb"
   - sudo dpkg -i "influxdb_$(echo $INFLUX)_amd64.deb"
   - sudo service influxdb start
