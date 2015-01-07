@@ -1,0 +1,7 @@
+{
+  "name": "mqtt-influxdb-bridge",
+  "dependencies": {
+    "bunyan": "^1.2.3",
+    "mqtt-influxdb": "git+https://github.com/sguilly/mqtt-influxdb.git"
+  }
+}

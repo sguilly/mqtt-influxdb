@@ -2,29 +2,19 @@
  * Created by sguilly on 24/11/14.
  */
 
-var PrettyStream = require('bunyan-prettystream');
-
-var prettyStdOut = new PrettyStream();
-prettyStdOut.pipe(process.stdout);
+var bunyan = require('bunyan');
+var logger = bunyan.createLogger({name: "myapp"});
 
 var mqttInfluxdb = require('../lib/mqtt-influxdb');
 
 
 var opts = {
-  logger: {
-    name: 'mqtt-influxdb-example',
-    streams: [{
-      level: 'trace',
-      type: 'raw',
-      stream: prettyStdOut
-    }]
-  },
+  logger: logger,
   mqtt: {
     ip : '127.0.0.1',
-    port: 3001, // tcp
-    topic: 'mqtt-zibase/#',
+    port: 1883, // tcp
     clientId : 'mqtt-influxdb',
-    subscribe : ['mqtt-teleinfo/#','mqtt-zibase/#'],
+    subscribe: ['windguru'],
     qos : 1 // 0 : without persistence and no ACK | 1 : with offline mode and ACK
   },
   influx :{
