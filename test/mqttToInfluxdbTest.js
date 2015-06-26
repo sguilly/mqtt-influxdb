@@ -15,10 +15,7 @@ prettyStdOut.pipe(process.stdout);
 
 var mosca = require('mosca');
 
-var influx = require('influx');
-
 var ascoltatore = {
-  //using ascoltatore
   type: 'memory'
 };
 
@@ -28,15 +25,15 @@ var settings = {
 };
 
 var opts = {
-  logger: {
-    name: 'mqtt-influxdb',
-    streams: [
-      {
-        level: 'trace',
-        type: 'raw',
-        stream: prettyStdOut
-      }]
-  },
+  //logger: {
+  //  name: 'mqtt-influxdb',
+  //  streams: [
+  //    {
+  //      level: 'trace',
+  //      type: 'raw',
+  //      stream: prettyStdOut
+  //    }]
+  //},
   mqtt: {
     ip: 'localhost',
     port: 1883, // tcp
@@ -63,7 +60,6 @@ var opts = {
 
 var serverMqtt; // To simulate the broker
 var clientMqtt; // To emit new events
-var clientInflux; // To create temp database, check points and delete temp database
 
 describe('#start mqtt server', function () {
   it('should receive ready', function (done) {
@@ -75,27 +71,71 @@ describe('#start mqtt server', function () {
       console.log('client connected', client.id);
     });
 
-// fired when a message is received
-    serverMqtt.on('published', function (packet) {
-      console.log('Published', packet.payload);
-    });
-
     serverMqtt.on('ready', function () {
+      console.log('mosca server ready');
       done();
     });
   });
 });
 
 describe('#start influxdb client', function () {
+
+  var clientInflux; // OBJ to test
+
   it('should create a temp database', function (done) {
 
-    clientInflux = influx(opts.influx);
 
-    clientInflux.deleteDatabase(opts.influx.database, function (err) {
-      console.log(err);
+    var influx = require('influx');
+    var clientInflux = influx(opts.influx);
+
+    assert(clientInflux instanceof influx.InfluxDB);
+
+    clientInflux.getDatabaseNames(function (err,array){
+
+      console.log('array=',array);
+
+      if(array.indexOf(opts.influx.database) == -1)
+      {
+        clientInflux.createDatabase(opts.influx.database, function(err)
+        {
+          assert.equal(err, null);
+
+          setTimeout(function () {
+            done();
+
+          }, 1000);
+
+        });
+      }
+      else
+      {
+        console.log('delete database');
+        clientInflux.deleteDatabase(opts.influx.database, function(err)
+        {
+          console.log('create database');
+          clientInflux.createDatabase(opts.influx.database, function(err)
+          {
+
+            assert.equal(err, null);
+
+            setTimeout(function () {
+              done();
+
+            }, 1000);
+
+          });
+        });
+      }
+
     });
 
-    clientInflux.createDatabase(opts.influx.database, done);
+    //clientInflux.deleteDatabase(opts.influx.database, function (err) {
+
+
+
+    //});
+
+    //done();
   });
 });
 
@@ -111,7 +151,10 @@ describe('#start mqtt-influxdb bridge and generate an event', function () {
       clientId: 'testMqtt'
     });
 
-    clientMqtt.on('connect', done);
+    clientMqtt.on('connect', function(){
+
+      done();
+    });
 
     var consumer = mqttInfluxdb(opts);
 
@@ -119,28 +162,60 @@ describe('#start mqtt-influxdb bridge and generate an event', function () {
   });
 
 
-  it('should store an event', function (done) {
+  it('connect', function (done) {
 
-    clientMqtt.publish('mqtt-zibase/1', JSON.stringify({id: 'OS01', itemToDeny: true, tem: 20}));
-
-    clientMqtt.publish('mqtt-zibase/1', JSON.stringify({id: 'OS02', time: new Date(), tem: 14.5}));
-
-    setTimeout(function () {
-        console.log('need to check');
-        done();
-
-      }, 250);
+    done();
 
   });
 
 });
 
-describe('#query influxdb', function () {
+describe('#wait 35s and query influxdb', function () {
+
+  this.timeout(35000);
+
+  var clientInflux;
+
+  before(function (done) {
+    var influx = require('influx');
+    clientInflux = influx(opts.influx);
+
+    clientMqtt.publish('mqtt-zibase/1', JSON.stringify({id: 'OS01', itemToDeny: true, tem: 20}));
+
+    clientMqtt.publish('mqtt-zibase/2', JSON.stringify({id: 'OS02', time: new Date(), tem: 14.5}));
+
+    setTimeout(function () {
+
+
+      done();
+
+    }, 30000);
+  });
+
+  it('should read series from the database', function (done) {
+    clientInflux.query('list series;', function (err, res) {
+
+      console.log('-----------');
+      console.log('list series');
+      console.log('err',err);
+      console.log('res=',res);
+
+      assert.equal(err, null);
+      assert(res instanceof Array);
+      assert.equal(res.length, 1);
+      assert.equal(res[0].name, 'list_series_result');
+
+      done();
+    });
+  });
+
   it('should read the event OS01 from the database', function (done) {
-    clientInflux.query('SELECT temperature FROM OS01;', function (err, res) {
+
+    clientInflux.query('select temperature FROM OS01;', function (err, res) {
+      console.log('-----------');
       console.log('query OS01');
-      console.log(err);
-      console.log(res);
+      console.log('err',err);
+      console.log('res=',res);
 
       assert.equal(err, null);
       assert(res instanceof Array);
@@ -153,7 +228,12 @@ describe('#query influxdb', function () {
   });
 
   it('should read the event OS02 from the database', function (done) {
-    clientInflux.query('SELECT temperature FROM OS02;', function (err, res) {
+
+      clientInflux.query('SELECT temperature FROM OS02;', function (err, res) {
+
+      console.log('err=',err);
+        console.log('res=',res);
+
       assert.equal(err, null);
       assert(res instanceof Array);
       assert.equal(res.length, 1);
@@ -165,36 +245,4 @@ describe('#query influxdb', function () {
   });
 
 });
-
-describe('#delete influxdb database', function () {
-  it('should delete the temp database', function (done) {
-
-    clientInflux = influx(opts.influx);
-
-    clientInflux.deleteDatabase(opts.influx.database, done);
-  });
-});
-
-describe('#delete influxdb database and emit an new event', function () {
-
-  before(function (done) {
-    clientMqtt.publish('mqtt-zibase/1', JSON.stringify({id: 'OS03', time: new Date(), tem: 14.5}));
-
-    setTimeout(function () {done();}, 250);
-
-  });
-
-  it('should raise an error', function (done) {
-    clientInflux.query('SELECT temperature FROM OS03;', function (err) {
-      assert(err instanceof Error);
-
-      done();
-    });
-  });
-
-});
-
-
-
-
 
