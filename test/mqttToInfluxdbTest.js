@@ -8,6 +8,8 @@ var assert = require('assert');
 
 var mqttInfluxdb = require('../lib/mqtt-influxdb');
 
+var bunyan = require('bunyan');
+
 var PrettyStream = require('bunyan-prettystream');
 
 var prettyStdOut = new PrettyStream();
@@ -24,16 +26,26 @@ var settings = {
   backend: ascoltatore
 };
 
+var logger = bunyan.createLogger({
+  name: 'mochacli',
+  streams: [
+    {
+      level: 'error',
+      type: 'raw',
+      stream: prettyStdOut
+    }]
+});
+
 var opts = {
-  //logger: {
-  //  name: 'mqtt-influxdb',
-  //  streams: [
-  //    {
-  //      level: 'trace',
-  //      type: 'raw',
-  //      stream: prettyStdOut
-  //    }]
-  //},
+  logger: bunyan.createLogger({
+    name: 'mqtt-influxdb',
+    streams: [
+      {
+        level: 'error',
+        type: 'raw',
+        stream: prettyStdOut
+      }]
+  }),
   mqtt: {
     ip: 'localhost',
     port: 1883, // tcp
@@ -68,19 +80,17 @@ describe('#start mqtt server', function () {
     serverMqtt = new mosca.Server(settings);
 
     serverMqtt.on('clientConnected', function (client) {
-      console.log('client connected', client.id);
+      logger.info('client connected', client.id);
     });
 
     serverMqtt.on('ready', function () {
-      console.log('mosca server ready');
+      logger.info('mosca server ready');
       done();
     });
   });
 });
 
 describe('#start influxdb client', function () {
-
-  var clientInflux; // OBJ to test
 
   it('should create a temp database', function (done) {
 
@@ -92,12 +102,13 @@ describe('#start influxdb client', function () {
 
     clientInflux.getDatabaseNames(function (err,array){
 
-      console.log('array=',array);
+      logger.trace('array=', array);
 
       if(array.indexOf(opts.influx.database) == -1)
       {
         clientInflux.createDatabase(opts.influx.database, function(err)
         {
+          if (err) logger.error('err=', err);
           assert.equal(err, null);
 
           setTimeout(function () {
@@ -109,13 +120,14 @@ describe('#start influxdb client', function () {
       }
       else
       {
-        console.log('delete database');
+        logger.info('delete database');
         clientInflux.deleteDatabase(opts.influx.database, function(err)
         {
-          console.log('create database');
+          logger.info('create database');
           clientInflux.createDatabase(opts.influx.database, function(err)
           {
 
+            if (err) logger.error('err=', err);
             assert.equal(err, null);
 
             setTimeout(function () {
@@ -129,18 +141,11 @@ describe('#start influxdb client', function () {
 
     });
 
-    //clientInflux.deleteDatabase(opts.influx.database, function (err) {
-
-
-
-    //});
-
-    //done();
   });
 });
 
 
-describe('#start mqtt-influxdb bridge and generate an event', function () {
+describe('#start mqtt-influxdb bridge', function () {
 
   before(function (done) {
     var mqtt = require('mqtt');
@@ -162,7 +167,7 @@ describe('#start mqtt-influxdb bridge and generate an event', function () {
   });
 
 
-  it('connect', function (done) {
+  it('should receive a connect event', function (done) {
 
     done();
 
@@ -170,7 +175,7 @@ describe('#start mqtt-influxdb bridge and generate an event', function () {
 
 });
 
-describe('#wait 35s and query influxdb', function () {
+describe('#generate OS01 & OS02 event -> wait 35s and query influxdb', function () {
 
   this.timeout(35000);
 
@@ -195,10 +200,10 @@ describe('#wait 35s and query influxdb', function () {
   it('should read series from the database', function (done) {
     clientInflux.query('list series;', function (err, res) {
 
-      console.log('-----------');
-      console.log('list series');
-      console.log('err',err);
-      console.log('res=',res);
+      logger.trace('-----------');
+      logger.trace('list series');
+      logger.trace('err', err);
+      logger.trace('res=', res);
 
       assert.equal(err, null);
       assert(res instanceof Array);
@@ -212,10 +217,10 @@ describe('#wait 35s and query influxdb', function () {
   it('should read the event OS01 from the database', function (done) {
 
     clientInflux.query('select temperature FROM OS01;', function (err, res) {
-      console.log('-----------');
-      console.log('query OS01');
-      console.log('err',err);
-      console.log('res=',res);
+      logger.trace('-----------');
+      logger.trace('query OS01');
+      logger.trace('err', err);
+      logger.trace('res=', res);
 
       assert.equal(err, null);
       assert(res instanceof Array);
@@ -231,8 +236,10 @@ describe('#wait 35s and query influxdb', function () {
 
       clientInflux.query('SELECT temperature FROM OS02;', function (err, res) {
 
-      console.log('err=',err);
-        console.log('res=',res);
+        logger.trace('-----------');
+        logger.trace('query OS02');
+        logger.trace('err=', err);
+        logger.trace('res=', res);
 
       assert.equal(err, null);
       assert(res instanceof Array);
