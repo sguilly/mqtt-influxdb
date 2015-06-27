@@ -104,11 +104,13 @@ describe('#start influxdb client', function () {
 
       logger.trace('array=', array);
 
-      if(array.indexOf(opts.influx.database) == -1)
+      if (array.indexOf(opts.influx.database) === -1)
       {
         clientInflux.createDatabase(opts.influx.database, function(err)
         {
-          if (err) logger.error('err=', err);
+          if (err) {
+            logger.error('err=', err);
+          }
           assert.equal(err, null);
 
           setTimeout(function () {
@@ -127,7 +129,9 @@ describe('#start influxdb client', function () {
           clientInflux.createDatabase(opts.influx.database, function(err)
           {
 
-            if (err) logger.error('err=', err);
+            if (err) {
+              logger.error('err=', err);
+            }
             assert.equal(err, null);
 
             setTimeout(function () {
