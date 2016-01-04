@@ -28,3 +28,14 @@ node_modules
 
 # Users Environment Variables
 .lock-wscript
+
+other
+temp
+
+# Webstorm file
+.idea
+
+# Data files
+*.db
+
+client

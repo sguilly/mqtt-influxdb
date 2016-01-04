@@ -3,36 +3,61 @@
  */
 
 var bunyan = require('bunyan');
-var logger = bunyan.createLogger({name: "myapp"});
+var logger = bunyan.createLogger({name: 'myapp', level: 'trace'});
 
 var mqttInfluxdb = require('../lib/mqtt-influxdb');
 
-
 var opts = {
-  logger: logger,
-  mqtt: {
-    ip : '127.0.0.1',
-    port: 1883, // tcp
-    clientId : 'mqtt-influxdb',
-    subscribe: ['windguru'],
-    qos : 1 // 0 : without persistence and no ACK | 1 : with offline mode and ACK
-  },
-  influx :{
-    host : '127.0.0.1',
-    port : 8086, // optional, default 8086
-    username : 'root',
-    password : 'root',
-    database : 'timeseries'
-  },
-  decoder :{
-    idKeys : ['id'],
-    timeKeys : ['time','date'],
-    denyKeys : ['power'],
-    transform : {tem : 'temperature', hum : 'humidity'},
-    allowString : false
-  }
+    logger: logger,
+    persistence: {type: 'nedb'},
+    rest: {port: 5080},
+    mqtt: {
+        ip: 'vps195103.ovh.net',
+        port: 1883, // tcp
+        clientId: 'mqttToInfluxdb_' + Math.random().toString(16).substr(2, 8),
+        clean: false
+    },
+    influx: {
+        host: 'vps195103.ovh.net',
+        port: 8086, // optional, default 8086
+        username: 'root',
+        password: 'root',
+        database: 'timeseries'
+    },
+    //decoder: {
+    //    '+/process': {
+    //        qos: 0,
+    //        seriesName: 'process',
+    //        timeKeys: ['time', 'date'],
+    //        denyKeys: [],//['power'],
+    //        tagKeys: ['hostname', 'pid', 'name'],
+    //        transform: {tem: 'temperature', hum: 'humidity'},
+    //        allowString: false
+    //    }
+    //}
 };
 
 var consumer = mqttInfluxdb(opts);
 
-consumer.open();
+consumer.addDecoder({
+    topic: '+/process',
+    params: {
+        qos: 0,
+        seriesName: 'process',
+        timeKeys: ['time', 'date'],
+        denyKeys: [],//['power'],
+        tagKeys: ['hostname', 'pid', 'name'],
+        transform: {tem: 'temperature', hum: 'humidity'},
+        allowString: false
+    }
+},function(err)
+{
+    if(err)
+    {
+        console.log('err=',err);
+    }
+    else
+    {
+        consumer.open();
+    }
+});
