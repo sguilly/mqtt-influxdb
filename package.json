@@ -45,12 +45,9 @@
   },
   "preferGlobal": "true",
   "dependencies": {
-    "express": "^4.13.3",
-    "express-crud": "^4.0.1",
+    "es6-promise": "^3.0.2",
     "influx": "^4.1.0",
     "mqtt": "^1.6.3",
-    "nedb": "^1.5.1",
-    "node-schedule": "^0.6.0",
-    "underscore": "^1.8.3"
+    "nedb": "^1.5.1"
   }
 }
