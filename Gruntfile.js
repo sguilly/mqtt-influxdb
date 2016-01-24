@@ -62,12 +62,33 @@ module.exports = function(grunt) {
           }
         }
       }
+    },
+    exec: {
+
+      dockerUp: {
+        command: 'docker-compose up -d',
+        cwd: './docker',
+        //stdout: false,
+        //stderr: false
+      },
+      dockerDown: {
+        command: 'docker-compose stop',
+        cwd: './docker',
+        //stdout: false,
+        //stderr: false
+      }
+
     }
 
 
   });
 
+  grunt.loadNpmTasks("grunt-exec");
+
   // Default task.
+
+  grunt.registerTask('docker_start', ['exec:dockerUp']);
+  grunt.registerTask('docker_stop', ['exec:dockerDown']);
   grunt.registerTask('default', ['jshint', 'mochacli']);
 
 

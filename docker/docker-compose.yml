@@ -4,5 +4,5 @@ influxdb:
    - "8083:8083"
    - "8086:8086"
 
-redis:
-  image: redis
+#redis:
+#  image: redis

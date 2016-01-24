@@ -1,1 +1,1 @@
-module.exports = require('./lib/mqtt-influxdb');
+module.exports = require('./lib/etl');

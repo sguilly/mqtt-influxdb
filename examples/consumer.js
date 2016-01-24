@@ -29,33 +29,22 @@ else {
 }
 
 
-var logger = require('/media/sguilly/storage/SRC/BITBUCKET/ido4pro-control-process/lib/index.js');
+
 
 var remoteControlCb = function (action) {
     console.log('action=', action.toString());
 };
 
-logger.create({
-    name: 'loggerForTest-' + Math.random().toString(16).substr(2, 8),
-    level: 'info',
-    console: true,
-    path: __dirname,
-    //child: 'toto',
-    osMetrics: 120000,
-    processMetrics: 30000,
-    host: 'localhost',
 
-    remoteControlCb: remoteControlCb
-});
-
-var mqttInfluxdb = require('../lib/mqtt-influxdb');
+var mqttInfluxdb = require('../lib/etl');
 
 var opts = {
-    logger: logger,
+    name: 'mqttToInfluxdb',
+    logger: null,
     persistence: {storeInDisk: true},
     mqtt: {
 
-        ip: 'localhost',
+        ip: 'mqtt.ido4pro.com',
         port: 1883, // tcp
         clientId: 'mqttInfluxdb_' + Math.random().toString(16).substr(2, 8),
         clean: false
@@ -69,7 +58,7 @@ var opts = {
     }
 };
 
-var consumer = mqttInfluxdb(opts);
+var consumer = new mqttInfluxdb(opts);
 
 consumer.addDecoders([{
     topic: '+/process',
@@ -107,13 +96,21 @@ consumer.addDecoders([{
             transform: {tem: 'temperature', hum: 'humidity'},
             allowString: false
         }
+    },
+    {
+        topic: 'abcdef',
+        params: {
+            qos: 0,
+            seriesName: 'mosca',
+            timeKeys: ['time', 'date'],
+            denyKeys: [],//['power'],
+            //tagKeys: ['hostname', 'name'],
+            transform: {tem: 'temperature', hum: 'humidity'},
+            allowString: false
+        }
     }
 
-]).then(function ()
-{
-    consumer.open();
-});
-
+]);
 
 var express = require('express');
 var app = express();
@@ -125,4 +122,4 @@ var mqttInfluxdbUi = require('mqtt-influxdb-ui');
 
 app.use('/mqtt-influxdb-ui', mqttInfluxdbUi(consumer, clientRedis));
 
-app.listen(5080, '0.0.0.0');
+app.listen(4080, '0.0.0.0');
